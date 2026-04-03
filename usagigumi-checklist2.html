@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>うさぎぐみ 登園チェック</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap');
+
+  :root {
+    --cream: #FFF8F0;
+    --warm-white: #FFFCF8;
+    --orange: #FF8C42;
+    --orange-light: #FFB380;
+    --orange-pale: #FFE8D6;
+    --brown: #7B4F2E;
+    --brown-light: #C4906A;
+    --green: #6BBF59;
+    --green-pale: #E8F5E4;
+    --blue: #5BAED4;
+    --blue-pale: #E3F2FA;
+    --purple: #9B7FD4;
+    --purple-pale: #F0EBFF;
+    --text: #3D2B1F;
+    --text-muted: #9C7B6A;
+    --shadow: rgba(123, 79, 46, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 110px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #FF8C42 0%, #FFB380 60%, #FFD4B0 100%);
+    padding: 20px 16px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 20px;
+    background: var(--cream);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  }
+  .header-inner { position: relative; z-index: 1; }
+  .header-title { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .title-text { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(123,79,46,0.3); }
+  .title-sub { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; margin-left: 42px; }
+
+  .tabs {
+    display: flex; gap: 8px; padding: 16px 16px 4px;
+    position: sticky; top: 0; background: var(--cream); z-index: 100;
+  }
+  .tab {
+    flex: 1; padding: 10px 4px; border: none; border-radius: 14px;
+    font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; background: #fff; color: var(--text-muted);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .tab.active { color: #fff; transform: translateY(-1px); }
+  .tab.active.prev { background: var(--purple); box-shadow: 0 4px 16px rgba(155,127,212,0.45); }
+  .tab.active.curr { background: var(--orange); box-shadow: 0 4px 16px rgba(255,140,66,0.45); }
+  .tab .tab-icon { display: block; font-size: 18px; margin-bottom: 2px; }
+
+  .page { display: none; padding: 12px 16px; }
+  .page.active { display: block; }
+
+  .progress-card {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 3px 12px var(--shadow); padding: 14px 16px; margin-bottom: 14px;
+  }
+  .progress-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .progress-text { font-size: 13px; font-weight: 900; color: var(--brown); }
+  .progress-count { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+  .progress-bar-bg { height: 10px; background: var(--cream); border-radius: 10px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s cubic-bezier(0.34,1.1,0.64,1); }
+  .bar-purple { background: linear-gradient(90deg, var(--purple), #B89FE8); }
+  .bar-orange { background: linear-gradient(90deg, var(--orange), #FFB380); }
+
+  .complete-banner {
+    margin-bottom: 14px; padding: 16px; border-radius: 18px;
+    text-align: center; color: #fff; font-size: 15px; font-weight: 900;
+    display: none; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .complete-banner.show { display: block; }
+  .complete-banner .banner-emoji { font-size: 28px; display: block; margin-bottom: 4px; }
+  .banner-purple { background: linear-gradient(135deg, var(--purple), #B89FE8); box-shadow: 0 4px 20px rgba(155,127,212,0.4); }
+  .banner-orange { background: linear-gradient(135deg, var(--orange), #FFB380); box-shadow: 0 4px 20px rgba(255,140,66,0.4); }
+
+  .section { margin-bottom: 14px; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 3px 12px var(--shadow); }
+  .section-header { display: flex; align-items: center; gap: 8px; padding: 13px 16px 9px; border-bottom: 1.5px solid var(--cream); }
+  .section-icon { font-size: 20px; }
+  .section-title { font-size: 14px; font-weight: 900; color: var(--brown); flex: 1; }
+  .section-badge { font-size: 11px; font-weight: 700; color: var(--text-muted); background: var(--cream); padding: 2px 8px; border-radius: 20px; }
+  .section-badge.done { color: var(--green); background: var(--green-pale); }
+
+  .check-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px; border-bottom: 1px solid var(--cream);
+    cursor: pointer; transition: background 0.15s; user-select: none;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-item:active { background: var(--cream); }
+
+  .check-box {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2.5px solid #DDD; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); background: #fff;
+  }
+  .check-box::after {
+    content: '✓'; font-size: 15px; color: #fff; font-weight: 900;
+    opacity: 0; transform: scale(0.5); transition: all 0.2s;
+  }
+  .check-item.checked .check-box { background: var(--green); border-color: var(--green); }
+  .check-item.checked .check-box::after { opacity: 1; transform: scale(1); }
+  .check-label { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; line-height: 1.4; transition: all 0.2s; }
+  .check-note { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.35; }
+  .check-item.checked .check-label { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--green); }
+
+  .qty-badge { font-size: 11px; font-weight: 900; color: var(--brown-light); background: var(--orange-pale); padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+  .important-badge { font-size: 10px; background: #FFE0DC; color: #E05A4E; padding: 2px 6px; border-radius: 6px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .optional-badge { font-size: 10px; background: var(--blue-pale); color: var(--blue); padding: 2px 6px; border-radius: 6px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+  /* お着替えカウンター */
+  .outfit-detail { background: var(--cream); margin: 0 16px 14px; border-radius: 12px; padding: 12px 14px; }
+  .outfit-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.8); }
+  .outfit-row:last-child { border-bottom: none; }
+  .outfit-label { font-size: 13px; color: var(--text); font-weight: 500; }
+  .outfit-count { display: flex; gap: 6px; }
+  .outfit-dot {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid #DDD;
+    background: #fff; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 900; color: transparent;
+  }
+  .outfit-dot.garden { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .outfit-dot.home { background: var(--green); border-color: var(--green); color: #fff; }
+  .outfit-legend { display: flex; gap: 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.8); }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-muted); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+  /* フォーム */
+  .form-card { background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 3px 12px var(--shadow); margin-bottom: 14px; }
+  .form-header { display: flex; align-items: center; gap: 8px; padding: 13px 16px 9px; border-bottom: 1.5px solid var(--cream); }
+  .form-title { font-size: 14px; font-weight: 900; color: var(--brown); }
+  .form-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .form-row { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+  .form-input, .form-textarea {
+    width: 100%; border: 1.5px solid var(--cream); border-radius: 10px;
+    padding: 9px 12px; font-family: inherit; font-size: 14px;
+    color: var(--text); background: var(--warm-white); outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus { border-color: var(--orange-light); }
+  .form-textarea { min-height: 60px; resize: none; }
+  .form-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 7px 13px; border-radius: 20px; border: 2px solid var(--cream);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    color: var(--text-muted); background: #fff; cursor: pointer; transition: all 0.2s;
+  }
+  .chip.selected { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+  /* 復習セクション */
+  .review-section { background: var(--purple-pale); border-radius: 20px; padding: 14px 16px; margin-bottom: 14px; border: 2px solid rgba(155,127,212,0.2); }
+  .review-title { font-size: 13px; font-weight: 900; color: var(--purple); margin-bottom: 10px; }
+  .review-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+  .r-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .r-done { background: var(--green); }
+  .r-undone { background: #DDD; border: 1.5px solid #CCC; }
+
+  .reset-area { padding: 4px 0 16px; }
+  .reset-btn {
+    width: 100%; padding: 14px; border: 2px dashed var(--orange-light);
+    border-radius: 14px; background: transparent; color: var(--orange);
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .reset-btn:active { background: var(--orange-pale); transform: scale(0.98); }
+
+  .float-bar { position: fixed; bottom: 16px; left: 16px; right: 16px; display: flex; gap: 8px; z-index: 200; }
+  .float-reset {
+    flex: 1; padding: 15px; background: #fff; border: none; border-radius: 16px;
+    font-family: inherit; font-size: 14px; font-weight: 700; color: var(--text-muted);
+    cursor: pointer; box-shadow: 0 4px 20px var(--shadow); transition: all 0.2s;
+  }
+  .float-reset:active { transform: scale(0.97); }
+  .float-date { padding: 15px 16px; background: var(--orange); border-radius: 16px; font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; box-shadow: 0 4px 20px rgba(255,140,66,0.4); white-space: nowrap; }
+
+
+  /* ===== 今日の予定カード ===== */
+  .today-events {
+    margin: 12px 16px 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 3px 14px var(--shadow);
+    background: #fff;
+  }
+  .today-events-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px 10px;
+    border-bottom: 1.5px solid var(--cream);
+    background: linear-gradient(135deg, #FFF8F0, #FFF3E8);
+  }
+  .today-events-title { font-size: 13px; font-weight: 900; color: var(--brown); flex: 1; }
+  .today-events-date { font-size: 11px; color: var(--text-muted); font-weight: 700; }
+  .event-list { padding: 8px 0; }
+  .event-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+  }
+  .event-tag {
+    font-size: 10px; font-weight: 900; padding: 3px 8px;
+    border-radius: 8px; white-space: nowrap; flex-shrink: 0;
+  }
+  .tag-行事 { background: #FFE8D6; color: #E05A4E; }
+  .tag-定例 { background: #E3F2FA; color: #5BAED4; }
+  .tag-検診 { background: #E8F5E4; color: #4A9E3A; }
+  .tag-訓練 { background: #FDE8F2; color: #D46A9B; }
+  .tag-休園 { background: #F0EBFF; color: #9B7FD4; }
+  .tag-希望保育 { background: #FFF3CD; color: #B8860B; }
+  .tag-面談 { background: #E8F0FE; color: #4A6FA5; }
+  .event-name { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; line-height: 1.3; }
+  .no-events {
+    padding: 14px 16px; font-size: 13px; color: var(--text-muted);
+    text-align: center; font-weight: 500;
+  }
+  .kyuen-banner {
+    margin: 12px 16px 0; padding: 14px 16px;
+    background: linear-gradient(135deg, #F0EBFF, #E8E0FF);
+    border-radius: 18px; border: 2px solid rgba(155,127,212,0.3);
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 3px 14px var(--shadow);
+  }
+  .kyuen-icon { font-size: 24px; }
+  .kyuen-text { font-size: 14px; font-weight: 900; color: var(--purple); }
+  .kyuen-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .tomorrow-events {
+    margin: 8px 16px 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 3px 14px var(--shadow);
+    background: #fff;
+  }
+  .tomorrow-events-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px 10px;
+    border-bottom: 1.5px solid var(--cream);
+    background: linear-gradient(135deg, #F0EBFF, #EAE4FF);
+  }
+  .tomorrow-events-title { font-size: 13px; font-weight: 900; color: var(--purple); flex: 1; }
+  .tomorrow-events-date { font-size: 11px; color: var(--text-muted); font-weight: 700; }
+
+
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes checkPop { 0%{transform:scale(1)} 50%{transform:scale(1.12)} 100%{transform:scale(1)} }
+  .check-item.just-checked { animation: checkPop 0.3s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-title">
+      <span style="font-size:32px">🐰</span>
+      <span class="title-text">うさぎぐみ 登園チェック</span>
+    </div>
+    <div class="title-sub" id="headerDate">読み込み中...</div>
+  </div>
+</div>
+
+<div id="calendarArea"></div>
+<div id="tomorrowArea"></div>
+<div class="tabs">
+  <button class="tab active prev" onclick="showPage('prev')" id="tab-prev">
+    <span class="tab-icon">🌙</span>前日夜
+  </button>
+  <button class="tab curr" onclick="showPage('curr')" id="tab-curr">
+    <span class="tab-icon">🌅</span>当日朝
+  </button>
+</div>
+
+<!-- ===== 前日夜 ===== -->
+<div class="page active" id="page-prev">
+
+  <div class="progress-card">
+    <div class="progress-info">
+      <span class="progress-text">🌙 前日準備の進捗</span>
+      <span class="progress-count" id="prevCount">0 / 0</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill bar-purple" id="prevBar" style="width:0%"></div></div>
+  </div>
+
+  <div id="prevBanner" class="complete-banner banner-purple">
+    <span class="banner-emoji">✨</span>前日準備完了！あとは朝だけ！
+  </div>
+
+  <!-- 持ち物 -->
+  <div class="section" id="sec-items">
+    <div class="section-header">
+      <span class="section-icon">🎒</span>
+      <span class="section-title">持ち物の準備</span>
+      <span class="section-badge" id="badge-items">0/8</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">お昼寝毛布</div>
+      <span class="qty-badge">2枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">おしりマット</div>
+      <span class="qty-badge">1枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">ループ付きタオル</div>
+      <span class="qty-badge">1枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">ハンカチ</div>
+      <span class="qty-badge">2枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">エコバッグ</div>
+      <span class="qty-badge">1枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">エプロン</div>
+      <span class="qty-badge">1枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">帽子</div>
+      <span class="qty-badge">1枚</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">水筒の準備（洗浄・セット）</div>
+      <span class="qty-badge">1つ</span>
+    </div>
+  </div>
+
+  <!-- 連絡袋 -->
+  <div class="section" id="sec-renraku">
+    <div class="section-header">
+      <span class="section-icon">📬</span>
+      <span class="section-title">連絡袋の確認</span>
+      <span class="section-badge" id="badge-renraku">0/2</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">連絡帳を連絡袋に入れる</div>
+      <span class="qty-badge">1冊</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">集金袋を確認・入れる</div>
+      <span class="optional-badge">あれば</span>
+    </div>
+  </div>
+
+  <!-- お着替えセット -->
+  <div class="section" id="sec-outfit">
+    <div class="section-header">
+      <span class="section-icon">👕</span>
+      <span class="section-title">お着替えセットの確認</span>
+      <span class="section-badge" id="badge-outfit">0/1</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">
+        合計4セット揃っているか確認
+        <div class="check-note">園に常時3セット ＋ 手元の予備1セット ＝ 計4セット必要</div>
+      </div>
+      <span class="important-badge">4セット!</span>
+    </div>
+  </div>
+
+  <!-- 着替え内訳 -->
+  <div class="outfit-detail">
+    <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px">内訳カウンター（タップで切り替え）</div>
+    <div class="outfit-row">
+      <span class="outfit-label">👙 下着</span>
+      <div class="outfit-count" id="dots-undershirt"></div>
+    </div>
+    <div class="outfit-row">
+      <span class="outfit-label">🧦 靴下</span>
+      <div class="outfit-count" id="dots-socks"></div>
+    </div>
+    <div class="outfit-row">
+      <span class="outfit-label">👕 Tシャツ</span>
+      <div class="outfit-count" id="dots-tshirt"></div>
+    </div>
+    <div class="outfit-row">
+      <span class="outfit-label">👖 ズボン</span>
+      <div class="outfit-count" id="dots-pants"></div>
+    </div>
+    <div class="outfit-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>園に預け中</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>手元にあり</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#DDD;border:1.5px solid #CCC"></div>未確認</div>
+    </div>
+  </div>
+
+  <!-- 連絡帳 前日記入 -->
+  <div class="form-card">
+    <div class="form-header">
+      <span class="section-icon">📝</span>
+      <span class="form-title">連絡帳の記入（前日）</span>
+    </div>
+    <div class="form-body">
+      <div class="form-row">
+        <span class="form-label">夕食の食べ具合</span>
+        <div class="form-chips" id="chips-dinner">
+          <button class="chip" onclick="selectChip(this,'chips-dinner')">よく食べた</button>
+          <button class="chip" onclick="selectChip(this,'chips-dinner')">普通</button>
+          <button class="chip" onclick="selectChip(this,'chips-dinner')">あまり食べなかった</button>
+          <button class="chip" onclick="selectChip(this,'chips-dinner')">ほぼ食べなかった</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="form-label">特記事項（任意）</span>
+        <textarea class="form-textarea" id="note-prev" placeholder="体調や気になることがあれば..." oninput="saveState()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="reset-area">
+    <button class="reset-btn" onclick="resetPage('prev')">🔄 前日チェックをリセット</button>
+  </div>
+</div>
+
+<!-- ===== 当日朝 ===== -->
+<div class="page" id="page-curr">
+
+  <div class="progress-card">
+    <div class="progress-info">
+      <span class="progress-text">🌅 当日朝の進捗</span>
+      <span class="progress-count" id="currCount">0 / 0</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill bar-orange" id="currBar" style="width:0%"></div></div>
+  </div>
+
+  <div id="currBanner" class="complete-banner banner-orange">
+    <span class="banner-emoji">🎉</span>準備完了！いってらっしゃい！
+  </div>
+
+  <!-- 連絡帳 当日記入 -->
+  <div class="form-card">
+    <div class="form-header">
+      <span class="section-icon">📝</span>
+      <span class="form-title">連絡帳の記入（当日朝）</span>
+    </div>
+    <div class="form-body">
+      <div class="form-row">
+        <span class="form-label">体温</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="temp-input" type="number" step="0.1" min="35" max="40" placeholder="36.5" style="width:120px" oninput="onTempInput()">
+          <span style="font-size:14px;color:var(--text-muted)">℃</span>
+          <span id="temp-warning" style="font-size:12px;color:#E05A4E;font-weight:700;display:none">⚠️ 発熱注意</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="form-label">朝食の食べ具合</span>
+        <div class="form-chips" id="chips-breakfast">
+          <button class="chip" onclick="selectChip(this,'chips-breakfast')">よく食べた</button>
+          <button class="chip" onclick="selectChip(this,'chips-breakfast')">普通</button>
+          <button class="chip" onclick="selectChip(this,'chips-breakfast')">あまり食べなかった</button>
+          <button class="chip" onclick="selectChip(this,'chips-breakfast')">ほぼ食べなかった</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="form-label">便意・排便</span>
+        <div class="form-chips" id="chips-toilet">
+          <button class="chip" onclick="selectChip(this,'chips-toilet')">あり・排便した</button>
+          <button class="chip" onclick="selectChip(this,'chips-toilet')">なし</button>
+          <button class="chip" onclick="selectChip(this,'chips-toilet')">様子見</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="form-label">お迎えの人</span>
+        <div class="form-chips" id="chips-pickup">
+          <button class="chip" onclick="selectChip(this,'chips-pickup')">ママ</button>
+          <button class="chip" onclick="selectChip(this,'chips-pickup')">パパ</button>
+          <button class="chip" onclick="selectChip(this,'chips-pickup')">祖父母</button>
+          <button class="chip" onclick="selectChip(this,'chips-pickup')">その他</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="form-label">子供の様子</span>
+        <div class="form-chips" id="chips-condition">
+          <button class="chip" onclick="selectChip(this,'chips-condition')">元気</button>
+          <button class="chip" onclick="selectChip(this,'chips-condition')">普通</button>
+          <button class="chip" onclick="selectChip(this,'chips-condition')">ぐずり気味</button>
+          <button class="chip" onclick="selectChip(this,'chips-condition')">体調やや不良</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="form-label">その他・連絡事項（任意）</span>
+        <textarea class="form-textarea" id="note-curr" placeholder="先生への連絡事項..." oninput="saveState()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 当日のやること -->
+  <div class="section" id="sec-curr">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <span class="section-title">当日朝のやること</span>
+      <span class="section-badge" id="badge-curr">0/2</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">水筒にお茶を入れる</div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box"></div>
+      <div class="check-label">
+        連絡帳の記入が完了している
+        <div class="check-note">体温・朝食・便意・お迎えの人・様子の5項目</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 前日復習 -->
+  <div class="review-section">
+    <div class="review-title">🔍 前日準備の確認（復習）</div>
+    <div id="reviewList"><div style="font-size:13px;color:var(--text-muted)">前日タブでチェックを入れると表示されます</div></div>
+  </div>
+
+  <div class="reset-area">
+    <button class="reset-btn" onclick="resetPage('curr')">🔄 当日朝チェックをリセット</button>
+  </div>
+</div>
+
+<div class="float-bar">
+  <button class="float-reset" onclick="resetCurrentPage()">🔄 リセット</button>
+  <div class="float-date" id="floatDate">読込中</div>
+</div>
+
+<script>
+const DAYS = ['日','月','火','水','木','金','土'];
+function updateDate() {
+  const now = new Date();
+  const str = `${now.getMonth()+1}月${now.getDate()}日(${DAYS[now.getDay()]})`;
+  document.getElementById('headerDate').textContent = str;
+  document.getElementById('floatDate').textContent = str;
+}
+updateDate();
+setInterval(updateDate, 60000);
+
+let currentPage = 'prev';
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  currentPage = id;
+  if (id === 'curr') buildReviewList();
+}
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  el.classList.add('just-checked');
+  setTimeout(() => el.classList.remove('just-checked'), 300);
+  updateProgress();
+  saveState();
+}
+
+function selectChip(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  saveState();
+}
+
+// お着替えドット
+const OUTFIT_KEYS = ['undershirt','socks','tshirt','pants'];
+const outfitState = { undershirt:[0,0,0,0], socks:[0,0,0,0], tshirt:[0,0,0,0], pants:[0,0,0,0] };
+
+function buildOutfitDots() {
+  OUTFIT_KEYS.forEach(key => {
+    const container = document.getElementById('dots-' + key);
+    container.innerHTML = '';
+    outfitState[key].forEach((state, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'outfit-dot' + (state === 1 ? ' garden' : state === 2 ? ' home' : '');
+      dot.textContent = state === 1 ? '園' : state === 2 ? '✓' : '';
+      dot.onclick = () => {
+        outfitState[key][i] = (outfitState[key][i] + 1) % 3;
+        buildOutfitDots();
+        saveState();
+      };
+      container.appendChild(dot);
+    });
+  });
+}
+buildOutfitDots();
+
+function updateProgress() {
+  // 前日
+  const pi = document.querySelectorAll('#page-prev .check-item');
+  const pc = document.querySelectorAll('#page-prev .check-item.checked');
+  const pp = pi.length > 0 ? pc.length / pi.length * 100 : 0;
+  document.getElementById('prevCount').textContent = pc.length + ' / ' + pi.length;
+  document.getElementById('prevBar').style.width = pp + '%';
+  document.getElementById('prevBanner').classList.toggle('show', pc.length === pi.length && pi.length > 0);
+
+  // 当日
+  const ci = document.querySelectorAll('#page-curr .check-item');
+  const cc = document.querySelectorAll('#page-curr .check-item.checked');
+  const cp = ci.length > 0 ? cc.length / ci.length * 100 : 0;
+  document.getElementById('currCount').textContent = cc.length + ' / ' + ci.length;
+  document.getElementById('currBar').style.width = cp + '%';
+  document.getElementById('currBanner').classList.toggle('show', cc.length === ci.length && ci.length > 0);
+
+  // バッジ
+  [
+    ['badge-items','#sec-items'],
+    ['badge-renraku','#sec-renraku'],
+    ['badge-outfit','#sec-outfit'],
+    ['badge-curr','#sec-curr'],
+  ].forEach(([id, sel]) => {
+    const sec = document.querySelector(sel);
+    if (!sec) return;
+    const items = sec.querySelectorAll('.check-item');
+    const checked = sec.querySelectorAll('.check-item.checked');
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = checked.length + '/' + items.length;
+    el.classList.toggle('done', checked.length === items.length && items.length > 0);
+  });
+}
+
+function buildReviewList() {
+  const items = document.querySelectorAll('#page-prev .check-item');
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+  items.forEach(item => {
+    const label = item.querySelector('.check-label');
+    const text = label ? label.childNodes[0].textContent.trim() : '';
+    const done = item.classList.contains('checked');
+    const row = document.createElement('div');
+    row.className = 'review-item';
+    row.innerHTML = '<div class="r-dot ' + (done ? 'r-done' : 'r-undone') + '"></div>'
+      + '<span style="' + (done ? 'color:var(--text-muted)' : 'color:var(--orange);font-weight:700') + '">'
+      + text + (done ? '' : ' ← 未完了') + '</span>';
+    list.appendChild(row);
+  });
+}
+
+function onTempInput() {
+  const temp = parseFloat(document.getElementById('temp-input').value);
+  document.getElementById('temp-warning').style.display = (!isNaN(temp) && temp >= 37.5) ? 'inline' : 'none';
+  saveState();
+}
+
+function resetPage(page) {
+  document.querySelectorAll('#page-' + page + ' .check-item').forEach(el => el.classList.remove('checked'));
+  if (page === 'prev') {
+    document.querySelectorAll('#page-prev .chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('note-prev').value = '';
+    OUTFIT_KEYS.forEach(k => { outfitState[k] = [0,0,0,0]; });
+    buildOutfitDots();
+  } else {
+    document.querySelectorAll('#page-curr .chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('note-curr').value = '';
+    document.getElementById('temp-input').value = '';
+    document.getElementById('temp-warning').style.display = 'none';
+  }
+  updateProgress();
+  // localStorageを上書き保存してリセット状態を確定
+  try { localStorage.removeItem('ug2'); } catch(e) {}
+  saveState();
+}
+function resetCurrentPage() { resetPage(currentPage); }
+
+function saveState() {
+  try {
+    const state = {};
+    document.querySelectorAll('.check-item').forEach((el, i) => { state['c' + i] = el.classList.contains('checked') ? 1 : 0; });
+    document.querySelectorAll('.chip').forEach((el, i) => { state['p' + i] = el.classList.contains('selected') ? 1 : 0; });
+    state.np = document.getElementById('note-prev').value;
+    state.nc = document.getElementById('note-curr').value;
+    state.tp = document.getElementById('temp-input').value;
+    state.of = JSON.stringify(outfitState);
+    localStorage.setItem('ug2', JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('ug2');
+    if (!saved) return;
+    const s = JSON.parse(saved);
+    document.querySelectorAll('.check-item').forEach((el, i) => { if (s['c' + i]) el.classList.add('checked'); });
+    document.querySelectorAll('.chip').forEach((el, i) => { if (s['p' + i]) el.classList.add('selected'); });
+    if (s.np) document.getElementById('note-prev').value = s.np;
+    if (s.nc) document.getElementById('note-curr').value = s.nc;
+    if (s.tp) { document.getElementById('temp-input').value = s.tp; onTempInput(); }
+    if (s.of) {
+      const o = JSON.parse(s.of);
+      OUTFIT_KEYS.forEach(k => { if (o[k]) outfitState[k] = o[k]; });
+      buildOutfitDots();
+    }
+  } catch(e) {}
+  updateProgress();
+}
+
+
+// ===== カレンダーイベント =====
+const EVENTS = [{"subject": "[行事] 1学期始業式", "tag": "行事", "start": "2026-04-01", "end": "2026-04-01", "desc": "分類:行事"}, {"subject": "[行事] 進級式", "tag": "行事", "start": "2026-04-01", "end": "2026-04-01", "desc": "分類:行事"}, {"subject": "[行事] 入園式", "tag": "行事", "start": "2026-04-03", "end": "2026-04-03", "desc": "分類:行事"}, {"subject": "[行事] 在園児通常保育", "tag": "行事", "start": "2026-04-03", "end": "2026-04-03", "desc": "分類:行事"}, {"subject": "[行事] ならし保育開始", "tag": "行事", "start": "2026-04-06", "end": "2026-04-06", "desc": "分類:行事"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-04-06", "end": "2026-04-06", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-04-07", "end": "2026-04-07", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-04-09", "end": "2026-04-09", "desc": "分類:定例"}, {"subject": "[行事] 在園児保護者会", "tag": "行事", "start": "2026-04-10", "end": "2026-04-10", "desc": "分類:行事"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-04-15", "end": "2026-04-15", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-04-17", "end": "2026-04-17", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-04-21", "end": "2026-04-21", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-04-22", "end": "2026-04-22", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-04-24", "end": "2026-04-24", "desc": "分類:定例"}, {"subject": "[行事] いもほり協力隊", "tag": "行事", "start": "2026-04-28", "end": "2026-04-28", "desc": "分類:行事"}, {"subject": "[休園] 昭和の日（祝日→休園）", "tag": "休園", "start": "2026-04-29", "end": "2026-04-29", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] 憲法記念日（祝日→休園）", "tag": "休園", "start": "2026-05-03", "end": "2026-05-03", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] みどりの日（祝日→休園）", "tag": "休園", "start": "2026-05-04", "end": "2026-05-04", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] こどもの日（祝日→休園）", "tag": "休園", "start": "2026-05-05", "end": "2026-05-05", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] 振替休日（祝日→休園）", "tag": "休園", "start": "2026-05-06", "end": "2026-05-06", "desc": "分類:休園 / 祝日/振替"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-05-08", "end": "2026-05-08", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-05-11", "end": "2026-05-11", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-05-12", "end": "2026-05-12", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-05-13", "end": "2026-05-13", "desc": "分類:定例"}, {"subject": "[検診] 歯科検診", "tag": "検診", "start": "2026-05-14", "end": "2026-05-14", "desc": "分類:検診"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-05-15", "end": "2026-05-15", "desc": "分類:定例"}, {"subject": "[行事] 協力隊", "tag": "行事", "start": "2026-05-20", "end": "2026-05-20", "desc": "分類:行事"}, {"subject": "[検診] 内科検診", "tag": "検診", "start": "2026-05-21", "end": "2026-05-21", "desc": "分類:検診"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-05-22", "end": "2026-05-22", "desc": "分類:訓練"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-05-26", "end": "2026-05-26", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-05-27", "end": "2026-05-27", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-05-29", "end": "2026-05-29", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-06-03", "end": "2026-06-03", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-06-05", "end": "2026-06-05", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-06-08", "end": "2026-06-08", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-06-10", "end": "2026-06-10", "desc": "分類:定例"}, {"subject": "[行事] 園内研修", "tag": "行事", "start": "2026-06-12", "end": "2026-06-12", "desc": "分類:行事"}, {"subject": "[行事] 全国内研修", "tag": "行事", "start": "2026-06-12", "end": "2026-06-12", "desc": "分類:行事"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-06-16", "end": "2026-06-16", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-06-19", "end": "2026-06-19", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-06-24", "end": "2026-06-24", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-06-26", "end": "2026-06-26", "desc": "分類:訓練"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-07-03", "end": "2026-07-03", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-07-06", "end": "2026-07-06", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-07-07", "end": "2026-07-07", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-07-08", "end": "2026-07-08", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-07-10", "end": "2026-07-10", "desc": "分類:定例"}, {"subject": "[行事] フェスティバル", "tag": "行事", "start": "2026-07-17", "end": "2026-07-17", "desc": "分類:行事 / 12時頃お迎え"}, {"subject": "[休園] 海の日（祝日→休園）", "tag": "休園", "start": "2026-07-20", "end": "2026-07-20", "desc": "分類:休園 / 祝日"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-07-22", "end": "2026-07-22", "desc": "分類:訓練"}, {"subject": "[行事] 1学期終業式", "tag": "行事", "start": "2026-07-23", "end": "2026-07-23", "desc": "分類:行事"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-07-29", "end": "2026-07-29", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-07-30", "end": "2026-07-30", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-08-03", "end": "2026-08-03", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-08-04", "end": "2026-08-04", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-08-05", "end": "2026-08-05", "desc": "分類:定例"}, {"subject": "[希望保育] 希望保育期間", "tag": "希望保育", "start": "2026-08-08", "end": "2026-08-15", "desc": "分類:希望保育 / 期間中すべて希望保育"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-08-10", "end": "2026-08-10", "desc": "分類:定例"}, {"subject": "[休園] 山の日（祝日→休園）", "tag": "休園", "start": "2026-08-11", "end": "2026-08-11", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-08-19", "end": "2026-08-19", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-08-21", "end": "2026-08-21", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-08-25", "end": "2026-08-25", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-08-27", "end": "2026-08-27", "desc": "分類:訓練"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-08-28", "end": "2026-08-28", "desc": "分類:定例"}, {"subject": "[行事] 2学期始業式", "tag": "行事", "start": "2026-09-01", "end": "2026-09-01", "desc": "分類:行事"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-09-02", "end": "2026-09-02", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-09-07", "end": "2026-09-07", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-09-09", "end": "2026-09-09", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-09-10", "end": "2026-09-10", "desc": "分類:定例"}, {"subject": "[行事] 園内研修", "tag": "行事", "start": "2026-09-11", "end": "2026-09-11", "desc": "分類:行事"}, {"subject": "[行事] 幼児組家族の日", "tag": "行事", "start": "2026-09-17", "end": "2026-09-17", "desc": "分類:行事"}, {"subject": "[行事] 乳児通常保育", "tag": "行事", "start": "2026-09-17", "end": "2026-09-17", "desc": "分類:行事"}, {"subject": "[休園] 敬老の日（祝日→休園）", "tag": "休園", "start": "2026-09-21", "end": "2026-09-21", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] 国民の休日（祝日→休園）", "tag": "休園", "start": "2026-09-22", "end": "2026-09-22", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] 秋分の日（祝日→休園）", "tag": "休園", "start": "2026-09-23", "end": "2026-09-23", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-09-25", "end": "2026-09-25", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-09-25", "end": "2026-09-25", "desc": "分類:訓練"}, {"subject": "[行事] 協力隊", "tag": "行事", "start": "2026-09-28", "end": "2026-09-28", "desc": "分類:行事"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-09-29", "end": "2026-09-29", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-10-02", "end": "2026-10-02", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-10-05", "end": "2026-10-05", "desc": "分類:定例"}, {"subject": "[行事] プラネタリューム", "tag": "行事", "start": "2026-10-06", "end": "2026-10-06", "desc": "分類:行事"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-10-06", "end": "2026-10-06", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-10-07", "end": "2026-10-07", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-10-09", "end": "2026-10-09", "desc": "分類:定例"}, {"subject": "[休園] スポーツの日（祝日→休園）", "tag": "休園", "start": "2026-10-12", "end": "2026-10-12", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-10-13", "end": "2026-10-13", "desc": "分類:定例"}, {"subject": "[行事] 協力隊", "tag": "行事", "start": "2026-10-14", "end": "2026-10-14", "desc": "分類:行事"}, {"subject": "[行事] スポーツDAY", "tag": "行事", "start": "2026-10-17", "end": "2026-10-17", "desc": "分類:行事"}, {"subject": "[行事] スポーツDAY 予備日", "tag": "行事", "start": "2026-10-19", "end": "2026-10-19", "desc": "分類:行事"}, {"subject": "[検診] 内科検診", "tag": "検診", "start": "2026-10-29", "end": "2026-10-29", "desc": "分類:検診"}, {"subject": "[休園] 文化の日（祝日→休園）", "tag": "休園", "start": "2026-11-03", "end": "2026-11-03", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-11-04", "end": "2026-11-04", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-11-06", "end": "2026-11-06", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-11-09", "end": "2026-11-09", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-11-10", "end": "2026-11-10", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-11-13", "end": "2026-11-13", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-11-17", "end": "2026-11-17", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-11-18", "end": "2026-11-18", "desc": "分類:定例"}, {"subject": "[検診] 歯科検診", "tag": "検診", "start": "2026-11-19", "end": "2026-11-19", "desc": "分類:検診"}, {"subject": "[行事] いもほり", "tag": "行事", "start": "2026-11-20", "end": "2026-11-20", "desc": "分類:行事"}, {"subject": "[行事] 協力隊", "tag": "行事", "start": "2026-11-20", "end": "2026-11-20", "desc": "分類:行事"}, {"subject": "[休園] 勤労感謝の日（祝日→休園）", "tag": "休園", "start": "2026-11-23", "end": "2026-11-23", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-11-25", "end": "2026-11-25", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-11-27", "end": "2026-11-27", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-11-27", "end": "2026-11-27", "desc": "分類:訓練"}, {"subject": "[面談] 幼児組個別懇談（期間）", "tag": "面談", "start": "2026-12-01", "end": "2026-12-05", "desc": "分類:面談 / 矢印期間まとめ"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-12-02", "end": "2026-12-02", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2026-12-10", "end": "2026-12-10", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-12-11", "end": "2026-12-11", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2026-12-14", "end": "2026-12-14", "desc": "分類:定例"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2026-12-15", "end": "2026-12-15", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2026-12-16", "end": "2026-12-16", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2026-12-18", "end": "2026-12-18", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2026-12-22", "end": "2026-12-22", "desc": "分類:訓練"}, {"subject": "[行事] 2学期終業式", "tag": "行事", "start": "2026-12-25", "end": "2026-12-25", "desc": "分類:行事"}, {"subject": "[行事] 冬の集い", "tag": "行事", "start": "2026-12-25", "end": "2026-12-25", "desc": "分類:行事"}, {"subject": "[休園] 冬期休暇（年末年始）", "tag": "休園", "start": "2026-12-28", "end": "2027-01-03", "desc": "分類:休園 / 矢印期間まとめ"}, {"subject": "[休園] 元旦（祝日→休園）", "tag": "休園", "start": "2027-01-01", "end": "2027-01-01", "desc": "分類:休園 / 祝日"}, {"subject": "[希望保育] 希望保育", "tag": "希望保育", "start": "2027-01-04", "end": "2027-01-06", "desc": "分類:希望保育 / 矢印期間まとめ"}, {"subject": "[行事] 3学期始業式", "tag": "行事", "start": "2027-01-07", "end": "2027-01-07", "desc": "分類:行事"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2027-01-08", "end": "2027-01-08", "desc": "分類:定例"}, {"subject": "[休園] 成人の日（祝日→休園）", "tag": "休園", "start": "2027-01-11", "end": "2027-01-11", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 年長和太鼓", "tag": "定例", "start": "2027-01-12", "end": "2027-01-12", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-01-13", "end": "2027-01-13", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2027-01-15", "end": "2027-01-15", "desc": "分類:定例"}, {"subject": "[定例] 年長お茶会", "tag": "定例", "start": "2027-01-18", "end": "2027-01-18", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-01-20", "end": "2027-01-20", "desc": "分類:定例"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2027-01-22", "end": "2027-01-22", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2027-01-28", "end": "2027-01-28", "desc": "分類:訓練"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2027-01-29", "end": "2027-01-29", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-02-03", "end": "2027-02-03", "desc": "分類:定例"}, {"subject": "[行事] ハッピースプリング", "tag": "行事", "start": "2027-02-05", "end": "2027-02-05", "desc": "分類:行事"}, {"subject": "[定例] 年中和太鼓", "tag": "定例", "start": "2027-02-09", "end": "2027-02-09", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2027-02-10", "end": "2027-02-10", "desc": "分類:定例"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-02-10", "end": "2027-02-10", "desc": "分類:定例"}, {"subject": "[休園] 建国記念の日（祝日→休園）", "tag": "休園", "start": "2027-02-11", "end": "2027-02-11", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-02-17", "end": "2027-02-17", "desc": "分類:定例"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2027-02-19", "end": "2027-02-19", "desc": "分類:訓練"}, {"subject": "[定例] 年中和太鼓", "tag": "定例", "start": "2027-02-22", "end": "2027-02-22", "desc": "分類:定例"}, {"subject": "[休園] 天皇誕生日（祝日→休園）", "tag": "休園", "start": "2027-02-23", "end": "2027-02-23", "desc": "分類:休園 / 祝日"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-02-24", "end": "2027-02-24", "desc": "分類:定例"}, {"subject": "[行事] 新入園児面接会", "tag": "行事", "start": "2027-02-26", "end": "2027-02-26", "desc": "分類:行事"}, {"subject": "[定例] 幼児英語", "tag": "定例", "start": "2027-03-03", "end": "2027-03-03", "desc": "分類:定例"}, {"subject": "[行事] 協力隊", "tag": "行事", "start": "2027-03-04", "end": "2027-03-04", "desc": "分類:行事"}, {"subject": "[定例] リトミック", "tag": "定例", "start": "2027-03-05", "end": "2027-03-05", "desc": "分類:定例"}, {"subject": "[定例] 年中和太鼓", "tag": "定例", "start": "2027-03-08", "end": "2027-03-08", "desc": "分類:定例"}, {"subject": "[定例] No.TV 絵本の日", "tag": "定例", "start": "2027-03-09", "end": "2027-03-09", "desc": "分類:定例"}, {"subject": "[行事] 幼児英語発表会", "tag": "行事", "start": "2027-03-10", "end": "2027-03-10", "desc": "分類:行事"}, {"subject": "[行事] お別れ遠足", "tag": "行事", "start": "2027-03-12", "end": "2027-03-12", "desc": "分類:行事"}, {"subject": "[訓練] 避難訓練", "tag": "訓練", "start": "2027-03-16", "end": "2027-03-16", "desc": "分類:訓練"}, {"subject": "[行事] 卒園式リハーサル", "tag": "行事", "start": "2027-03-19", "end": "2027-03-19", "desc": "分類:行事"}, {"subject": "[休園] 春分の日（祝日→休園）", "tag": "休園", "start": "2027-03-21", "end": "2027-03-21", "desc": "分類:休園 / 祝日"}, {"subject": "[休園] 振替休日（祝日→休園）", "tag": "休園", "start": "2027-03-22", "end": "2027-03-22", "desc": "分類:休園 / 祝日/振替"}, {"subject": "[行事] 3学期終業式", "tag": "行事", "start": "2027-03-23", "end": "2027-03-23", "desc": "分類:行事"}, {"subject": "[行事] 卒園式", "tag": "行事", "start": "2027-03-24", "end": "2027-03-24", "desc": "分類:行事"}, {"subject": "[希望保育] 希望保育", "tag": "希望保育", "start": "2027-03-24", "end": "2027-03-24", "desc": "分類:希望保育"}];
+
+function getTodayEvents() {
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-'
+    + String(today.getMonth()+1).padStart(2,'0') + '-'
+    + String(today.getDate()).padStart(2,'0');
+  return EVENTS.filter(e => e.start <= todayStr && todayStr <= e.end);
+}
+
+
+function getTomorrowEvents() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tStr = tomorrow.getFullYear() + '-'
+    + String(tomorrow.getMonth()+1).padStart(2,'0') + '-'
+    + String(tomorrow.getDate()).padStart(2,'0');
+  return { events: EVENTS.filter(e => e.start <= tStr && tStr <= e.end), dateStr: tStr, date: tomorrow };
+}
+
+function renderTomorrowEvents() {
+  const { events: tomorrowEvents, date: tomorrow } = getTomorrowEvents();
+  const container = document.getElementById('tomorrowArea');
+  if (!container) return;
+
+  const dateStr = (tomorrow.getMonth()+1) + '月' + tomorrow.getDate() + '日';
+  const isKyuen = tomorrowEvents.some(e => e.tag === '休園');
+  const nonKyuen = tomorrowEvents.filter(e => e.tag !== '休園');
+
+  let itemsHtml = '';
+  if (isKyuen) {
+    const kyuenEv = tomorrowEvents.find(e => e.tag === '休園');
+    itemsHtml = '<div class="event-item"><span class="event-tag tag-休園">休園</span><span class="event-name">' + (kyuenEv ? kyuenEv.subject.replace(/\[.*?\]\s*/, '') : '休園日') + '</span></div>';
+  } else if (nonKyuen.length === 0) {
+    itemsHtml = '<div class="no-events">特別な予定はありません</div>';
+  } else {
+    itemsHtml = nonKyuen.map(e => {
+      const name = e.subject.replace(/\[.*?\]\s*/, '');
+      return '<div class="event-item"><span class="event-tag tag-' + e.tag + '">' + e.tag + '</span><span class="event-name">' + name + '</span></div>';
+    }).join('');
+  }
+
+  container.innerHTML = '<div class="tomorrow-events"><div class="tomorrow-events-header"><span style="font-size:18px">🔮</span><span class="tomorrow-events-title">明日の予定</span><span class="tomorrow-events-date">' + dateStr + '</span></div><div class="event-list">' + itemsHtml + '</div></div>';
+}
+
+function renderTodayEvents() {
+  const todayEvents = getTodayEvents();
+  const isKyuen = todayEvents.some(e => e.tag === '休園');
+  const container = document.getElementById('calendarArea');
+  if (!container) return;
+
+  const now = new Date();
+  const dateStr = (now.getMonth()+1) + '月' + now.getDate() + '日';
+
+  if (isKyuen) {
+    const kyuenEv = todayEvents.find(e => e.tag === '休園');
+    container.innerHTML = '<div class="kyuen-banner"><span class="kyuen-icon">🏠</span><div><div class="kyuen-text">今日は休園日</div><div class="kyuen-sub">' + (kyuenEv ? kyuenEv.subject.replace(/\[.*?\]\s*/, '') : '') + '</div></div></div>';
+    return;
+  }
+
+  const nonKyuen = todayEvents.filter(e => e.tag !== '休園');
+
+  if (nonKyuen.length === 0) {
+    container.innerHTML = '<div class="today-events"><div class="today-events-header"><span style="font-size:18px">📅</span><span class="today-events-title">今日の予定</span><span class="today-events-date">' + dateStr + '</span></div><div class="no-events">🌟 今日は特別な予定はありません</div></div>';
+    return;
+  }
+
+  let itemsHtml = nonKyuen.map(e => {
+    const name = e.subject.replace(/\[.*?\]\s*/, '');
+    return '<div class="event-item"><span class="event-tag tag-' + e.tag + '">' + e.tag + '</span><span class="event-name">' + name + '</span></div>';
+  }).join('');
+
+  container.innerHTML = '<div class="today-events"><div class="today-events-header"><span style="font-size:18px">📅</span><span class="today-events-title">今日の予定</span><span class="today-events-date">' + dateStr + '</span></div><div class="event-list">' + itemsHtml + '</div></div>';
+}
+
+loadState();
+renderTodayEvents();
+renderTomorrowEvents();
+</script>
+</body>
+</html>
